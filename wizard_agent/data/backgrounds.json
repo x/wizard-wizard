@@ -1,0 +1,114 @@
+{
+  "Acolyte": {
+    "Ability Scores": "Intelligence, Wisdom, Charisma",
+    "Origin Feat": "Magic Initiate (Cleric)",
+    "Skill Proficiencies": "Insight, Religion",
+    "Tool Proficiency": "Calligrapher's Supplies",
+    "Equipment": "Calligrapher's Supplies, Prayer Book, Holy Symbol, Parchment (10 sheets), Robe, 8 GP"
+  },
+  "Artisan": {
+    "Ability Scores": "Strength, Dexterity, Intelligence",
+    "Origin Feat": "Crafter",
+    "Skill Proficiencies": "Investigation, Persuasion",
+    "Tool Proficiency": "One type of Artisan's Tools",
+    "Equipment": "Chosen Artisan's Tools, 2 Pouches, Traveler's Clothes, 32 GP"
+  },
+  "Charlatan": {
+    "Ability Scores": "Dexterity, Constitution, Charisma",
+    "Origin Feat": "Skilled",
+    "Skill Proficiencies": "Deception, Sleight of Hand",
+    "Tool Proficiency": "Forgery Kit",
+    "Equipment": "Forgery Kit, Costume, Fine Clothes, 15 GP"
+  },
+  "Criminal": {
+    "Ability Scores": "Dexterity, Constitution, Intelligence",
+    "Origin Feat": "Alert",
+    "Skill Proficiencies": "Sleight of Hand, Stealth",
+    "Tool Proficiency": "Thieves' Tools",
+    "Equipment": "2 Daggers, Thieves' Tools, Crowbar, 2 Pouches, Traveler's Clothes, 16 GP"
+  },
+  "Entertainer": {
+    "Ability Scores": "Strength, Dexterity, Charisma",
+    "Origin Feat": "Musician",
+    "Skill Proficiencies": "Acrobatics, Performance",
+    "Tool Proficiency": "One type of Musical Instrument",
+    "Equipment": "Musical Instrument, 2 Costumes, Mirror, Perfume, Traveler's Clothes, 11 GP"
+  },
+  "Farmer": {
+    "Ability Scores": "Strength, Constitution, Wisdom",
+    "Origin Feat": "Tough",
+    "Skill Proficiencies": "Animal Handling, Nature",
+    "Tool Proficiency": "Carpenter's Tools",
+    "Equipment": "Sickle, Carpenter's Tools, Healer's Kit, Iron Pot, Shovel, Traveler's Clothes, 30 GP"
+  },
+  "Guard": {
+    "Ability Scores": "Strength, Intelligence, Wisdom",
+    "Origin Feat": "Alert",
+    "Skill Proficiencies": "Athletics, Perception",
+    "Tool Proficiency": "One type of Gaming Set",
+    "Equipment": "Spear, Light Crossbow (20 Bolts), Gaming Set, Hooded Lantern, Manacles, Quiver, Traveler's Clothes, 12 GP"
+  },
+  "Guide": {
+    "Ability Scores": "Dexterity, Constitution, Wisdom",
+    "Origin Feat": "Magic Initiate (Druid)",
+    "Skill Proficiencies": "Stealth, Survival",
+    "Tool Proficiency": "Cartographer's Tools",
+    "Equipment": "Shortbow (20 Arrows), Cartographer's Tools, Bedroll, Quiver, Tent, Traveler's Clothes, 3 GP"
+  },
+  "Hermit": {
+    "Ability Scores": "Constitution, Wisdom, Charisma",
+    "Origin Feat": "Healer",
+    "Skill Proficiencies": "Medicine, Religion",
+    "Tool Proficiency": "Herbalism Kit",
+    "Equipment": "Quarterstaff, Herbalism Kit, Bedroll, Book (philosophy), Lamp, Oil (3 flasks), Traveler's Clothes, 16 GP"
+  },
+  "Merchant": {
+    "Ability Scores": "Constitution, Intelligence, Charisma",
+    "Origin Feat": "Lucky",
+    "Skill Proficiencies": "Animal Handling, Persuasion",
+    "Tool Proficiency": "Navigator's Tools",
+    "Equipment": "Navigator's Tools, 2 Pouches, Traveler's Clothes, 22 GP"
+  },
+  "Noble": {
+    "Ability Scores": "Strength, Intelligence, Charisma",
+    "Origin Feat": "Skilled",
+    "Skill Proficiencies": "History, Persuasion",
+    "Tool Proficiency": "One type of Gaming Set",
+    "Equipment": "Gaming Set, Fine Clothes, Perfume, 29 GP"
+  },
+  "Sage": {
+    "Ability Scores": "Constitution, Intelligence, Wisdom",
+    "Origin Feat": "Magic Initiate (Wizard)",
+    "Skill Proficiencies": "Arcana, History",
+    "Tool Proficiency": "Calligrapher's Supplies",
+    "Equipment": "Quarterstaff, Calligrapher's Supplies, Book (history), Parchment (8 sheets), Robe, 8 GP"
+  },
+  "Sailor": {
+    "Ability Scores": "Strength, Dexterity, Wisdom",
+    "Origin Feat": "Tavern Brawler",
+    "Skill Proficiencies": "Acrobatics, Perception",
+    "Tool Proficiency": "Navigator's Tools",
+    "Equipment": "Dagger, Navigator's Tools, Rope, Traveler's Clothes, 20 GP"
+  },
+  "Scribe": {
+    "Ability Scores": "Dexterity, Intelligence, Wisdom",
+    "Origin Feat": "Skilled",
+    "Skill Proficiencies": "Investigation, Perception",
+    "Tool Proficiency": "Calligrapher's Supplies",
+    "Equipment": "Calligrapher's Supplies, Fine Clothes, Lamp, Oil (3 flasks), Parchment (12 sheets), 23 GP"
+  },
+  "Soldier": {
+    "Ability Scores": "Strength, Dexterity, Constitution",
+    "Origin Feat": "Savage Attacker",
+    "Skill Proficiencies": "Athletics, Intimidation",
+    "Tool Proficiency": "One type of Gaming Set",
+    "Equipment": "Spear, Shortbow (20 Arrows), Gaming Set, Healer's Kit, Quiver, Traveler's Clothes, 14 GP"
+  },
+  "Wayfarer": {
+    "Ability Scores": "Dexterity, Wisdom, Charisma",
+    "Origin Feat": "Lucky",
+    "Skill Proficiencies": "insight, Stealth",
+    "Tool Proficiency": "Thieves' Tools",
+    "Equipment": "2 Daggers, Thieves' Tools, Gaming Set (any), Bedroll, 2 Pouches, Traveler's Clothes, 16 GP"
+  }
+}
