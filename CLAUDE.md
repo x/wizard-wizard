@@ -1,358 +1,452 @@
-## **Purpose**
+# Project Documentation
 
-This repository contains a set of **Google ADK agents and tools** that cooperate to build a **valid Level-1 Wizard (D&D 5e 2024 rules)**.
-All code in this repo supports that single workflow.
+## Purpose (Repo-Specific)
 
-The root agent coordinates a sequence of sub-agents (Race, Ability Scores, Class, Background, Spellcasting, Spellbook, Cantrips, Preparation, Derived Stats, Validation).
-Each agent updates a shared character-sheet structure.
+This repository implements a **D&D 5e Level 1 Wizard Character Builder** using the AI Wizard Pattern.
+
+The agent guides users through a 10-step character creation process:
+1. Race → 2. Ability Scores → 3. Class (Wizard) → 4. Background →
+5. Spellcasting config → 6. Spellbook (6 lvl-1 spells) →
+7. Cantrips (3) → 8. Prepared spells → 9. Derived stats → 10. Validation
+
+**Key constraints:**
+- D&D 5e 2024 rules only
+- Level 1 Wizard only
+- Ability score increases come from Backgrounds (not races, per 2024 rules)
+- All spell/race/background data comes from tools (never hallucinated)
+
+**State model:** `CharacterSheet` in `wizard_agent/models/character_sheet.py`
+
+**Root agent:** `wizard_builder` in `wizard_agent/agent.py`
+
+**Pattern:** See [WIZARD_PATTERN.md](WIZARD_PATTERN.md) for the Automatic Looping Coordinator pattern used in this implementation.
 
 ---
 
-## **How to Work in This Repo**
-
-### **Add dependencies**
-
-Use standard Python packaging.
-If you add a library, update:
+## Repository Structure
 
 ```
-pyproject.toml
+wizard_agent/
+├── agent.py              # Root coordinator agent
+├── agents/               # Step-specific sub-agents
+│   ├── race_agent.py
+│   ├── ability_score_agent.py
+│   ├── class_agent.py
+│   └── ...
+├── tools/                # Domain tools and state management
+│   ├── character_sheet.py  # State tools
+│   ├── races.py
+│   ├── spells.py
+│   └── ...
+├── models/               # Pydantic models
+│   └── character_sheet.py
+└── data/                 # Static data files
+    ├── races.json
+    ├── spells.json
+    └── ...
+
+tests/                    # pytest tests
 ```
 
-using `uv`
+**Architecture principles:**
+- `agent.py` orchestrates; keep it thin and declarative
+- Each sub-agent in `agents/` handles exactly one step
+- Tools in `tools/` are the source of truth for rules and state
+- Models in `models/` define typed, validated state structures
+- Never duplicate rule data in agent prompts
 
+---
+
+## Libraries & Tools Reference
+
+### Google ADK (Agent Development Kit)
+
+We use Google ADK for agent orchestration, tool calling, and state management.
+
+**Documentation:**
+- LLM Tooling: https://raw.githubusercontent.com/google/adk-docs/refs/heads/main/llms-full.txt
+- Evaluations: https://raw.githubusercontent.com/google/adk-docs/refs/heads/main/docs/evaluate/index.md
+
+**Key concepts:**
+- Tools are first-class; define functions and the framework handles calling
+- Agents use `transfer_to_agent` to delegate to sub-agents
+- State persists in `tool_context.state` across agent transitions
+- Sub-agents must explicitly transfer back to parent to trigger continuation
+
+**Running the agent:**
+```bash
+# Interactive mode
+uv run adk run wizard_agent
+
+# With session saving
+uv run adk run wizard_agent --save_session
+
+# Replay mode (for testing)
+uv run adk run wizard_agent --replay <(echo '{"state": {}, "queries": ["start", "input1", "input2"]}')
 ```
+
+### Pydantic
+
+Used for typed, validated data models.
+
+**Documentation:** https://docs.pydantic.dev/latest/llms-full.txt
+
+**Usage patterns:**
+- Define state models with `BaseModel`
+- Use `Field()` for defaults and validation
+- Add `@computed_field` for derived properties
+- Include validation methods on the model
+
+```python
+from pydantic import BaseModel, Field, computed_field
+
+class MyState(BaseModel):
+    data: dict = Field(default_factory=dict)
+
+    @computed_field
+    @property
+    def computed_value(self) -> str:
+        return self.data.get("key", "default")
+
+    def validate_complete(self) -> tuple[bool, list[str]]:
+        errors = []
+        # validation logic
+        return (len(errors) == 0, errors)
+```
+
+**Type conversions:** Use `@classmethod` constructors for conversions between types:
+
+```python
+@classmethod
+def from_other_type(cls, other: OtherType) -> "MyState":
+    return cls(data=other.some_field)
+```
+
+### uv (Package Manager)
+
+**Add dependencies:**
+```bash
 uv add <package-name>
 ```
 
-Run tests (see below) after adding any dependencies.
-
-```
-uv run pytest tests/**/test_*.py
-```
-
-### **Run tests**
-
-Tests are written using the `pytest` framework.
-
-If tests exist, run them with:
-
-```
-uv run pytest tests/**/test_*.py
-```
-
-or an appropriate subset.
-
-If none exist yet, keep code modular so tests can be added easily.
-
-### **Evaluations**
-
-You can run evaluation of an eval set file through the command line interface.
-
-The docs for evaluations are available at:
-https://raw.githubusercontent.com/google/adk-docs/refs/heads/main/docs/evaluate/index.md
-
-You should write evaluations to test your agents and tools.
-
-We only care about running the evaluations with the CLI (you must wrap with `uv run`)
-
-Here is the command:
-
-```
-uv run adk eval \
-    <AGENT_MODULE_FILE_PATH> \
-    <EVAL_SET_FILE_PATH> \
-    [--config_file_path=<PATH_TO_TEST_JSON_CONFIG_FILE>] \
-    [--print_detailed_results]
-```
-
-For example:
-
-```
-uv run adk eval \
-    samples_for_testing/hello_world \
-    samples_for_testing/hello_world/hello_world_eval_set_001.evalset.json
-```
-
----
-
-## **Google ADK**
-
-We use the **Google ADK LiteLlm + Agent** classes for orchestrating the character-building workflow.
-
-You should read this documentation before modifying agent logic:
-
-**Google ADK LLM Tooling**
-[https://raw.githubusercontent.com/google/adk-docs/refs/heads/main/llms-full.txt](https://raw.githubusercontent.com/google/adk-docs/refs/heads/main/llms-full.txt)
-
-Key points:
-
-* Tools are first-class and should be used rather than re-implementing logic.
-* The root agent should be declarative: describe goals and rely on sub-agents + tools to do work.
-* Agents should read & write to the shared character sheet consistently.
-
-
----
-
-## **Pydantic, Dataclasses, and Dicts**
-
-Use pydantic when appropriate for serialization and deserialization.
-
-Full docs here:
-https://docs.pydantic.dev/latest/llms-full.txt
-
-If the data you're working with is simple (flat, typed, doesn't need to be serialized) it's fine to just use a dataclass. Python dictionaries should really only be used to interface with APIs that require them, handling kwargs, and handling unknown keys.
-
-When working converting between types, use the `fromFoo` static-method constructor approach.
-
-For example:
-
-```
-@dataclass
-class Foo:
-    qux: str
-    baz: float
-
-    @classmethod
-    def from_bar(bar: Bar) -> "Foo":
-        return Foo(bar.other_name_for_qux, bar.other_name_for_baz)
-```
-
-This works for both Dataclasses and Pydantic Models.
-
----
-
-## **Code Structure**
-
-* **`wizard_agent/tools`** → Spell, race, background, and dice lookup functionality.
-  *Always use these; do not recreate rule data in agent code.*
-
-* **`wizard_agent/agent.py`** → Orchestrates the Wizard-building pipeline.
-  Should remain thin: describe the task, call sub-agents, and handle errors.
-
-* **`wizard_agent/agents`** → Sub-agents for each step of the pipeline.
-  Each should handle one step and return updated sheet or a structured error.
-
-* **`wizard_agent/models`** → The character sheet dataclass or structured object.
-
-When creating new files, follow existing naming patterns and keep one responsibility per module.
-
----
-
-## **Linting and Formatting**
-
-You should lint and format the code as part of your workflow. The primary linter and formatter are `ruff`, runnable with:
-
-```
+**Run commands:**
+```bash
+uv run pytest tests/
 uv run ruff check .
+uv run adk run wizard_agent
 ```
 
-You can look at the docs for the linter here:
-https://docs.astral.sh/ruff/linter/
+### ruff (Linter & Formatter)
 
-You can look at all the rules for ruff check here:
-https://docs.astral.sh/ruff/rules/
+**Documentation:**
+- Linter: https://docs.astral.sh/ruff/linter/
+- Rules: https://docs.astral.sh/ruff/rules/
+- Formatter: https://docs.astral.sh/ruff/formatter/
 
-```
+**Usage:**
+```bash
+# Check code
+uv run ruff check .
+
+# Format code
 uv run ruff format .
 ```
 
-You can look at the docs for ruff format here:
-https://docs.astral.sh/ruff/formatter/
+**Configuration:** See `pyproject.toml` for rule configuration.
 
+### ty (Type Checker)
 
-You can additionally type-check the code with:
+**Documentation:**
+- Main: https://docs.astral.sh/ty/
+- Rules: https://docs.astral.sh/ty/reference/rules/
 
-```
+**Usage:**
+```bash
 uv run ty check .
 ```
 
-You can look at the docs here:
-https://docs.astral.sh/ty/
+### pytest (Testing)
 
-And the rules for ty here:
-https://docs.astral.sh/ty/reference/rules/#invalid-overload
+**Run tests:**
+```bash
+# All tests
+uv run pytest tests/**/test_*.py
 
-In all of the above cases, there are some things that may not work with ruff and ty so it may be necessary to update the pyproject.toml
+# Specific test file
+uv run pytest tests/wizard_agent/test_races.py
+
+# With verbose output
+uv run pytest tests/ -v
+```
+
+### dotenv (Environment Variables)
+
+Load environment variables from `.env` file:
+
+```python
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+api_key = os.getenv("OPENAI_API_KEY")
+```
 
 ---
 
-## **Debugging Guidance**
+## Agent Development Workflow
 
-1. **Look at tool errors first** (most issues will be input mismatch or invalid lookups).
-2. **Validate assumptions** about spell counts, ability-score methods, etc.
-3. If an agent writes invalid data, add explicit checks or return structured errors.
-4. Keep tight control of names: spell names, race names, etc. must match tool data exactly.
+### Adding Dependencies
 
----
+1. Add the package:
+   ```bash
+   uv add <package-name>
+   ```
 
-## **Testing & Session Analysis**
+2. Update imports in code
 
-### **Running the Agent Interactively**
+3. Run tests:
+   ```bash
+   uv run pytest tests/**/test_*.py
+   ```
 
-Test the wizard builder agent by running:
+### Modifying Agent Logic
 
+1. **For coordinator changes:** Edit `wizard_agent/agent.py`
+   - Keep it declarative
+   - Use `check_next_step` to determine flow
+   - Let sub-agents do the work
+
+2. **For step-specific changes:** Edit the relevant agent in `wizard_agent/agents/`
+   - Each agent handles one step
+   - Must transfer back to coordinator when complete
+   - Use step-specific tools
+
+3. **For state changes:** Edit `wizard_agent/models/character_sheet.py`
+   - Add fields to `CharacterSheet` model
+   - Include validation methods
+   - Update `check_next_step` tool if needed
+
+4. **For tools:** Edit files in `wizard_agent/tools/`
+   - Tools are the source of truth for domain logic
+   - Return `ToolResponse[T]` for consistency
+   - Never duplicate data in agent prompts
+
+### Testing & Validation
+
+**Run tests after changes:**
+```bash
+uv run pytest tests/**/test_*.py
+```
+
+**Lint and format:**
+```bash
+uv run ruff check .
+uv run ruff format .
+uv run ty check .
+```
+
+**Test agent interactively:**
 ```bash
 uv run adk run wizard_agent --save_session
 ```
 
-This will:
-- Start an interactive session where you can build a wizard
-- Save the session to `sessions/session-<UUID>.json` for later analysis
-- Use `--model` flag to specify a different model if needed
-
-### **Testing with Replay**
-
-You can test agent flows by providing pre-defined queries using the `--replay` flag.
-
-**Quick testing with process substitution:**
-
+**Quick replay testing:**
 ```bash
-# Test just the initial greeting
-uv run adk run wizard_agent --replay <(echo '{"state": {}, "queries": ["I'\''d like to build a wizard"]}')
-
-# Test through race selection
-uv run adk run wizard_agent --replay <(echo '{"state": {}, "queries": ["I'\''d like to build a wizard", "Gandalf", "Human", "yes"]}')
-
-# Test through multiple steps
-uv run adk run wizard_agent --replay <(echo '{"state": {}, "queries": ["I'\''d like to build a wizard", "Elminster", "Elf", "yes", "standard array", "yes that works"]}')
+uv run adk run wizard_agent --replay <(echo '{"state": {}, "queries": ["start", "step1", "step2"]}')
 ```
 
-**For repeatable test cases, create a file:**
+### Evaluations
+
+Run evaluations to test agent behavior systematically:
+
+```bash
+uv run adk eval \
+    wizard_agent \
+    path/to/evalset.json \
+    [--config_file_path=path/to/config.json] \
+    [--print_detailed_results]
+```
+
+Write evaluation sets to test:
+- Happy path flows
+- Error handling
+- Edge cases
+- State consistency
+
+---
+
+## Testing Strategies
+
+### Session Analysis
+
+Sessions capture complete conversation history, state changes, and tool calls.
+
+**Save sessions:**
+```bash
+uv run adk run wizard_agent --save_session
+```
+
+**Analyze with jq:**
+```bash
+# View all text messages
+jq '.events[] | select(.content.parts[0].text != null) | {author, text: .content.parts[0].text}' sessions/session-<UUID>.json
+
+# View state changes
+jq '.events[] | select(.actions.stateDelta != null) | {author, state: .actions.stateDelta}' sessions/session-<UUID>.json
+
+# Track agent transfers
+jq '.events[] | select(.actions.transferToAgent != null) | {from: .author, to: .actions.transferToAgent}' sessions/session-<UUID>.json
+
+# View final state
+jq '.state' sessions/session-<UUID>.json
+```
+
+**Debugging agent flow:**
+- Look for "do you want to continue?" messages (shouldn't exist)
+- Check that transfers happen automatically between steps
+- Verify sub-agents transfer back to coordinator
+- Confirm state updates occur at expected points
+
+### Replay Testing
+
+Test flows programmatically with replay files:
 
 ```json
 {
   "state": {},
   "queries": [
-    "I'd like to build a wizard",
-    "Elminster",
-    "Human",
-    "yes",
-    "Can you explain my options?",
-    "Standard array please",
-    "Yes that recommended distribution is perfect"
+    "User message 1",
+    "User message 2",
+    "User message 3"
   ]
 }
 ```
 
-Then run: `uv run adk run wizard_agent --replay test_replay.json`
-
-**Verifying automatic transitions:**
-- Watch for direct agent-to-agent transitions (e.g., race_agent completes → ability_score_agent starts)
-- There should be NO "Would you like to continue?" prompts between steps
-- Each sub-agent should only interact during its own step, then immediately stop responding
-
-### **Analyzing Session Files**
-
-Session files contain the complete conversation history, state changes, and tool calls. They're useful for:
-- Understanding agent flow and where users get stuck
-- Debugging why agents wait for confirmation instead of auto-continuing
-- Checking what state was modified at each step
-
-**Useful commands for session analysis:**
-
+**Run with file:**
 ```bash
-# Pretty-print the entire session
-jq '.' sessions/session-<UUID>.json
-
-# Extract just the conversation turns (user + agent messages)
-jq '.events[] | select(.content.parts[0].text != null) | {author, text: .content.parts[0].text}' sessions/session-<UUID>.json
-
-# See state changes over time
-jq '.events[] | select(.actions.stateDelta.character_sheet != null) | {author, state: .actions.stateDelta.character_sheet}' sessions/session-<UUID>.json
-
-# Find where agents transfer control
-jq '.events[] | select(.actions.transferToAgent != null) | {from: .author, to: .actions.transferToAgent}' sessions/session-<UUID>.json
-
-# Check final character sheet state
-jq '.state.character_sheet' sessions/session-<UUID>.json
+uv run adk run wizard_agent --replay test_replay.json
 ```
 
-**What to look for when debugging agent flow:**
-- Messages that ask "do you want to continue?" or "ready for the next step?" indicate the agent is waiting unnecessarily
-- Look for patterns where user says "yes", "continue", "next" repeatedly - this means agents aren't auto-continuing
-- Check transfer points: after each agent completes work, it should immediately transfer back to wizard_builder
-- The wizard_builder should immediately transfer to the next agent without waiting for user confirmation
-
----
-
-## **Business Logic Overview**
-
-The core workflow:
-
-1. Race → 2. Ability Scores → 3. Class (Wizard) → 4. Background →
-5. Spellcasting config → 6. Spellbook (6 lvl-1 spells) →
-7. Cantrips (3) → 8. Prepared spells → 9. Derived stats → 10. Validation
-
-Each step should:
-
-* Only modify its own slice of the sheet
-* Validate before returning
-* Never guess or hallucinate rule content (use tools instead)
-
-Patterns we like:
-
-* Small, pure functions inside each agent
-* Defensive validation
-* Clear naming, minimal comments
-
----
-
-## **Agent Orchestration Pattern**
-
-The wizard builder uses an **automatic looping coordinator** pattern:
-
-### **How It Works**
-
-1. **wizard_builder** (root agent) operates in a loop:
-   - Calls `check_next_step` tool to determine what needs to be done
-   - Transfers to the appropriate sub-agent
-   - When sub-agent completes, the loop repeats automatically
-
-2. **Sub-agents** complete their work and explicitly transfer back:
-   - After completing their task, they use `transfer_to_agent` to return to `wizard_builder`
-   - This triggers wizard_builder to check what's next and continue the flow
-   - NO user "continue" message needed between steps
-
-3. **check_next_step** tool determines the flow:
-   - Examines the character sheet state
-   - Returns which agent should handle the next step
-   - This keeps the flow logic centralized and maintainable
-
-### **Example Flow**
-
-```
-User: "I'd like to build a wizard"
-  ↓
-wizard_builder: [checks next step] → transfers to race_agent
-  ↓
-race_agent: [user picks name/race] → transfers back to wizard_builder
-  ↓
-wizard_builder: [checks next step] → transfers to ability_score_agent
-  ↓
-ability_score_agent: [user sets scores] → transfers back to wizard_builder
-  ↓
-wizard_builder: [checks next step] → transfers to class_agent
-  ↓
-... continues automatically until all steps complete
+**Run inline (faster iteration):**
+```bash
+uv run adk run wizard_agent --replay <(echo '{"state": {}, "queries": ["msg1", "msg2"]}')
 ```
 
-### **Key Implementation Details**
+### Unit Testing
 
-- **wizard_builder** must ALWAYS call `check_next_step` when invoked
-- **Sub-agents** must explicitly `transfer_to_agent("wizard_builder")` when done
-- The `CharacterSheet` model includes `completed_steps` for progress tracking
-- The `check_next_step` tool encodes the business logic for step ordering
+Test tools and state logic independently:
+
+```python
+def test_state_validation():
+    sheet = CharacterSheet(name="Test", race="Human")
+    is_valid, errors = sheet.validate_complete()
+    assert not is_valid  # Incomplete character
+    assert len(errors) > 0
+
+def test_check_next_step():
+    context = create_test_context()
+    result = check_next_step(context)
+    assert result["result"]["next_agent"] == "race_agent"
+```
+
+### Integration Testing
+
+Test that agents properly coordinate:
+
+```python
+def test_agent_transfers():
+    response = coordinator.process("Start")
+    assert response.actions.transfer_to_agent == "race_agent"
+
+    # Simulate race_agent completing
+    response = race_agent.process("My choice")
+    assert response.actions.transfer_to_agent == "wizard_builder"
+```
 
 ---
 
-## **Style & Naming Conventions**
+## The Wizard Pattern
 
-* Prefer clear names over comments.
-* Avoid long prompt strings inside code; keep prompts declarative and short.
-* Keep agent responsibilities minimal and explicit.
-* No duplication of rules data—tools are the source of truth.
+This repository implements the **AI Wizard Pattern** - an architectural pattern for building AI-driven multi-step forms and configuration wizards.
+
+**Core pattern:** [WIZARD_PATTERN.md](WIZARD_PATTERN.md)
+
+**Key concepts:**
+1. **Shared State** - All agents read/write a common state object
+2. **Automatic Looping Coordinator** - Continuously checks what's needed and routes to specialists
+3. **Specialized Sub-Agents** - Each handles one step, transfers back when complete
+4. **Step-Specific Tools** - Provide options, validation, and state mutation
+5. **Progress Determination** - Central `check_next_step` tool encodes workflow logic
+
+**Implementation notes:**
+- Coordinator MUST call `check_next_step` every time it's invoked
+- Sub-agents MUST explicitly `transfer_to_agent("coordinator")` when done
+- NO "do you want to continue?" prompts between steps
+- Automatic progression creates a seamless "form wizard" experience
+
+See [WIZARD_PATTERN.md](WIZARD_PATTERN.md) for complete documentation, diagrams, and examples.
 
 ---
 
-## **End of CLAUDE.md**
+## Debugging Guidance
+
+### Common Issues
+
+**Agent stops after sub-agent completes:**
+- Check sub-agent transfers back to coordinator
+- Verify coordinator calls `check_next_step` on every invocation
+- Look for "STOP" finish reason in session file
+
+**State not persisting:**
+- Ensure tools use `tool_context.state` for read/write
+- Call `save_state(tool_context, state)` after updates
+- Check state delta in session file
+
+**Validation fails unexpectedly:**
+- Verify tool data matches exactly (names, formats)
+- Check for typos in lookups
+- Add defensive validation in tools
+
+**Tool errors:**
+- Most issues are input mismatch or invalid lookups
+- Validate assumptions about data structure
+- Check tool response format matches expectations
+
+### Investigation Steps
+
+1. **Look at tool errors first** - Check tool call results in session
+2. **Validate assumptions** - Verify data matches expected format
+3. **Add explicit checks** - Return structured errors from tools
+4. **Keep tight control of names** - Ensure exact matches for lookups
+
+---
+
+## Style & Naming Conventions
+
+### Code Style
+
+- **Prefer clear names over comments**
+- **Avoid long prompt strings in code** - Keep agent instructions declarative
+- **Keep agent responsibilities minimal** - One step per agent
+- **No duplication of rule data** - Tools are the source of truth
+- **Small, pure functions** - Easy to test and understand
+- **Defensive validation** - Check inputs and state consistency
+
+### Naming Conventions
+
+- **Agents:** `<step>_agent` (e.g., `race_agent`, `background_agent`)
+- **Tools:** `<verb>_<noun>` (e.g., `list_races`, `save_character_name`)
+- **Models:** `<Noun>` (e.g., `CharacterSheet`, `AbilityScores`)
+- **Test files:** `test_<module>.py`
+- **Constants:** `UPPER_SNAKE_CASE`
+
+### File Organization
+
+- One responsibility per module
+- Follow existing naming patterns
+- Group related functionality together
+- Keep imports organized (stdlib, third-party, local)
+
+---
+
+## End of Documentation
