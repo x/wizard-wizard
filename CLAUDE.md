@@ -186,6 +186,96 @@ In all of the above cases, there are some things that may not work with ruff and
 
 ---
 
+## **Testing & Session Analysis**
+
+### **Running the Agent Interactively**
+
+Test the wizard builder agent by running:
+
+```bash
+uv run adk run wizard_agent --save_session
+```
+
+This will:
+- Start an interactive session where you can build a wizard
+- Save the session to `sessions/session-<UUID>.json` for later analysis
+- Use `--model` flag to specify a different model if needed
+
+### **Testing with Replay**
+
+You can test agent flows by providing pre-defined queries using the `--replay` flag.
+
+**Quick testing with process substitution:**
+
+```bash
+# Test just the initial greeting
+uv run adk run wizard_agent --replay <(echo '{"state": {}, "queries": ["I'\''d like to build a wizard"]}')
+
+# Test through race selection
+uv run adk run wizard_agent --replay <(echo '{"state": {}, "queries": ["I'\''d like to build a wizard", "Gandalf", "Human", "yes"]}')
+
+# Test through multiple steps
+uv run adk run wizard_agent --replay <(echo '{"state": {}, "queries": ["I'\''d like to build a wizard", "Elminster", "Elf", "yes", "standard array", "yes that works"]}')
+```
+
+**For repeatable test cases, create a file:**
+
+```json
+{
+  "state": {},
+  "queries": [
+    "I'd like to build a wizard",
+    "Elminster",
+    "Human",
+    "yes",
+    "Can you explain my options?",
+    "Standard array please",
+    "Yes that recommended distribution is perfect"
+  ]
+}
+```
+
+Then run: `uv run adk run wizard_agent --replay test_replay.json`
+
+**Verifying automatic transitions:**
+- Watch for direct agent-to-agent transitions (e.g., race_agent completes → ability_score_agent starts)
+- There should be NO "Would you like to continue?" prompts between steps
+- Each sub-agent should only interact during its own step, then immediately stop responding
+
+### **Analyzing Session Files**
+
+Session files contain the complete conversation history, state changes, and tool calls. They're useful for:
+- Understanding agent flow and where users get stuck
+- Debugging why agents wait for confirmation instead of auto-continuing
+- Checking what state was modified at each step
+
+**Useful commands for session analysis:**
+
+```bash
+# Pretty-print the entire session
+jq '.' sessions/session-<UUID>.json
+
+# Extract just the conversation turns (user + agent messages)
+jq '.events[] | select(.content.parts[0].text != null) | {author, text: .content.parts[0].text}' sessions/session-<UUID>.json
+
+# See state changes over time
+jq '.events[] | select(.actions.stateDelta.character_sheet != null) | {author, state: .actions.stateDelta.character_sheet}' sessions/session-<UUID>.json
+
+# Find where agents transfer control
+jq '.events[] | select(.actions.transferToAgent != null) | {from: .author, to: .actions.transferToAgent}' sessions/session-<UUID>.json
+
+# Check final character sheet state
+jq '.state.character_sheet' sessions/session-<UUID>.json
+```
+
+**What to look for when debugging agent flow:**
+- Messages that ask "do you want to continue?" or "ready for the next step?" indicate the agent is waiting unnecessarily
+- Look for patterns where user says "yes", "continue", "next" repeatedly - this means agents aren't auto-continuing
+- Check transfer points: after each agent completes work, it should immediately transfer back to wizard_builder
+- The wizard_builder should immediately transfer to the next agent without waiting for user confirmation
+
+---
+
 ## **Business Logic Overview**
 
 The core workflow:
@@ -205,6 +295,54 @@ Patterns we like:
 * Small, pure functions inside each agent
 * Defensive validation
 * Clear naming, minimal comments
+
+---
+
+## **Agent Orchestration Pattern**
+
+The wizard builder uses an **automatic looping coordinator** pattern:
+
+### **How It Works**
+
+1. **wizard_builder** (root agent) operates in a loop:
+   - Calls `check_next_step` tool to determine what needs to be done
+   - Transfers to the appropriate sub-agent
+   - When sub-agent completes, the loop repeats automatically
+
+2. **Sub-agents** complete their work and explicitly transfer back:
+   - After completing their task, they use `transfer_to_agent` to return to `wizard_builder`
+   - This triggers wizard_builder to check what's next and continue the flow
+   - NO user "continue" message needed between steps
+
+3. **check_next_step** tool determines the flow:
+   - Examines the character sheet state
+   - Returns which agent should handle the next step
+   - This keeps the flow logic centralized and maintainable
+
+### **Example Flow**
+
+```
+User: "I'd like to build a wizard"
+  ↓
+wizard_builder: [checks next step] → transfers to race_agent
+  ↓
+race_agent: [user picks name/race] → transfers back to wizard_builder
+  ↓
+wizard_builder: [checks next step] → transfers to ability_score_agent
+  ↓
+ability_score_agent: [user sets scores] → transfers back to wizard_builder
+  ↓
+wizard_builder: [checks next step] → transfers to class_agent
+  ↓
+... continues automatically until all steps complete
+```
+
+### **Key Implementation Details**
+
+- **wizard_builder** must ALWAYS call `check_next_step` when invoked
+- **Sub-agents** must explicitly `transfer_to_agent("wizard_builder")` when done
+- The `CharacterSheet` model includes `completed_steps` for progress tracking
+- The `check_next_step` tool encodes the business logic for step ordering
 
 ---
 

@@ -1,8 +1,6 @@
 from wizard_agent.tools.races import (
     find_race_by_name,
-    get_ability_bonuses,
     list_races,
-    list_races_by_ability,
     list_sizes,
 )
 
@@ -47,24 +45,9 @@ def test_list_races_filter_by_darkvision():
 
 
 def test_list_races_invalid_size():
-    result = list_races(size="huge")
+    result = list_races(size="huge")  # type: ignore[arg-type]
     assert result["status"] == "failure"
     assert "message" in result
-
-
-def test_get_ability_bonuses():
-    result = get_ability_bonuses("Dwarf")
-    assert result["status"] == "success"
-    assert len(result["result"]) > 0
-    # Check that constitution bonus exists
-    abilities = [score["ability"] for score in result["result"]]
-    assert "constitution" in abilities
-
-
-def test_list_races_by_ability():
-    result = list_races_by_ability("dexterity")
-    assert result["status"] == "success"
-    assert "Elf" in result["result"]
 
 
 def test_list_sizes():

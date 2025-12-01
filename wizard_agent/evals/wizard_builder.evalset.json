@@ -1,0 +1,86 @@
+{
+  "eval_set_id": "wizard_builder_001",
+  "name": "Wizard Builder Evaluation Set",
+  "description": "Tests for the wizard builder sequential agent pipeline",
+  "eval_cases": [
+    {
+      "eval_id": "build_gnome_wizard",
+      "conversation": [
+        {
+          "invocation_id": "inv_001",
+          "user_content": "Build me a gnome wizard named Fizban the Fabulous",
+          "expected_tool_use": [
+            "find_race_by_name",
+            "set_race",
+            "apply_racial_ability_bonuses",
+            "set_character_name",
+            "set_ability_scores",
+            "set_class_wizard",
+            "find_background_by_name",
+            "set_background",
+            "configure_spellcasting",
+            "add_spellbook_spell",
+            "add_cantrip",
+            "prepare_spell",
+            "compute_derived_stats",
+            "validate_character_sheet"
+          ]
+        }
+      ],
+      "session_input": {
+        "app_name": "wizard_builder",
+        "user_id": "test_user"
+      }
+    },
+    {
+      "eval_id": "build_elf_wizard",
+      "conversation": [
+        {
+          "invocation_id": "inv_002",
+          "user_content": "Create an elf wizard for me",
+          "expected_tool_use": [
+            "find_race_by_name",
+            "set_race",
+            "set_ability_scores",
+            "set_class_wizard",
+            "configure_spellcasting",
+            "add_spellbook_spell",
+            "add_cantrip",
+            "compute_derived_stats",
+            "validate_character_sheet"
+          ]
+        }
+      ],
+      "session_input": {
+        "app_name": "wizard_builder",
+        "user_id": "test_user"
+      }
+    },
+    {
+      "eval_id": "build_human_wizard_sage",
+      "conversation": [
+        {
+          "invocation_id": "inv_003",
+          "user_content": "Build a human wizard with the sage background",
+          "expected_tool_use": [
+            "find_race_by_name",
+            "set_race",
+            "set_ability_scores",
+            "set_class_wizard",
+            "find_background_by_name",
+            "set_background",
+            "configure_spellcasting",
+            "add_spellbook_spell",
+            "add_cantrip",
+            "compute_derived_stats",
+            "validate_character_sheet"
+          ]
+        }
+      ],
+      "session_input": {
+        "app_name": "wizard_builder",
+        "user_id": "test_user"
+      }
+    }
+  ]
+}

@@ -1,76 +1,60 @@
 [
 	{
+		"name": "Aasimar",
+		"darkvision": 60,
+		"size": "medium",
+		"source": "PHB"
+	},
+	{
 		"name": "Dragonborn",
-		"abilityScores": [
-			{"ability": "strength", "bonus": 2},
-			{"ability": "charisma", "bonus": 1}
-		],
 		"darkvision": null,
 		"size": "medium",
 		"source": "PHB"
 	},
 	{
 		"name": "Dwarf",
-		"abilityScores": [
-			{"ability": "constitution", "bonus": 2}
-		],
 		"darkvision": 60,
 		"size": "medium",
 		"source": "PHB"
 	},
 	{
 		"name": "Elf",
-		"abilityScores": [
-			{"ability": "dexterity", "bonus": 2}
-		],
 		"darkvision": 60,
 		"size": "medium",
 		"source": "PHB"
 	},
 	{
 		"name": "Gnome",
-		"abilityScores": [
-			{"ability": "intelligence", "bonus": 2}
-		],
 		"darkvision": 60,
 		"size": "small",
 		"source": "PHB"
 	},
 	{
-		"name": "Half-Elf",
-		"abilityScores": [
-			{"ability": "charisma", "bonus": 2},
-			{"ability": "any", "bonus": 1, "count": 2}
-		],
-		"darkvision": 60,
-		"size": "medium",
-		"source": "PHB"
-	},
-	{
-		"name": "Half-Orc",
-		"abilityScores": [
-			{"ability": "strength", "bonus": 2},
-			{"ability": "constitution", "bonus": 1}
-		],
-		"darkvision": 60,
+		"name": "Goliath",
+		"darkvision": null,
 		"size": "medium",
 		"source": "PHB"
 	},
 	{
 		"name": "Halfling",
-		"abilityScores": [
-			{"ability": "dexterity", "bonus": 2}
-		],
 		"darkvision": null,
 		"size": "small",
 		"source": "PHB"
 	},
 	{
+		"name": "Human",
+		"darkvision": null,
+		"size": "medium",
+		"source": "PHB"
+	},
+	{
+		"name": "Orc",
+		"darkvision": 60,
+		"size": "medium",
+		"source": "PHB"
+	},
+	{
 		"name": "Tiefling",
-		"abilityScores": [
-			{"ability": "charisma", "bonus": 2},
-			{"ability": "intelligence", "bonus": 1}
-		],
 		"darkvision": 60,
 		"size": "medium",
 		"source": "PHB"

@@ -60,6 +60,6 @@ def test_list_spells_filter_by_level():
 
 
 def test_list_spells_invalid_school():
-    result = list_spells(school="invalid")
+    result = list_spells(school="invalid")  # type: ignore[arg-type]
     assert result["status"] == "failure"
     assert "message" in result
