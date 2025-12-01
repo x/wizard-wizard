@@ -1,8 +1,11 @@
+> [!CAUTION]
+> **THIS REPO HEAVILY VIBECODED**
+
 # Wizard-Wizard
 
 An AI agent that guides you through building a Level 1 D&D 5e Wizard character, step by step.
 
-This repo demonstrates the **Wizard Pattern** - an AI design pattern for multi-step configuration workflows where agents automatically guide users through complex forms without requiring "continue" prompts between steps.
+This repo demonstrates what I'm calling the **"Wizard Pattern"** (like [Win32 Wizard](https://learn.microsoft.com/en-us/windows/win32/controls/wizards)): an AI design pattern for multi-step configuration workflows where agents automatically guide users through complex forms without requiring "continue" prompts between steps.
 
 ## How It Works
 
