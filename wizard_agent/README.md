@@ -1,6 +1,3 @@
-> [!CAUTION]
-> **THIS REPO HEAVILY VIBECODED**
-
 # Wizard-Wizard
 
 An AI agent that guides you through building a Level 1 D&D 5e Wizard character, step by step.
